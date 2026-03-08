@@ -1,0 +1,35 @@
+name: Update Servers
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Fetch IP list
+        run: |
+          curl -s https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt | head -n 50 > list.txt
+
+      - name: Convert to JSON
+        run: |
+          echo "[" > servers.json
+          while read line; do
+            echo "\"http://$line\"," >> servers.json
+          done < list.txt
+          sed -i '$ s/,$//' servers.json
+          echo "]" >> servers.json
+
+      - name: Commit changes
+        run: |
+          git config --global user.name "bot"
+          git config --global user.email "bot@github.com"
+          git add servers.json
+          git commit -m "update servers" || echo "no changes"
+          git push
